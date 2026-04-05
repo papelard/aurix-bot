@@ -70,8 +70,22 @@ export async function getVideoInfo(videoId: string): Promise<YouTubeVideo | null
 
 export async function getStream(videoId: string): Promise<Readable> {
   const url = `https://www.youtube.com/watch?v=${videoId}`;
-  const source = await playdl.stream(url, { quality: 2 });
-  return source.stream;
+
+  try {
+    console.log('[YouTube] Trying play-dl...');
+    const source = await playdl.stream(url, { quality: 2 });
+    console.log('[YouTube] play-dl success');
+    return source.stream;
+  } catch (err) {
+    console.error('[YouTube] play-dl failed, trying innertube:', err);
+    const innertube = await getInnertube();
+    const stream = await innertube.download(videoId, {
+      type: 'audio',
+      quality: 'best',
+      format: 'any',
+    });
+    return Readable.from(stream);
+  }
 }
 
 function formatDuration(sec: number): string {
