@@ -11,7 +11,7 @@ import {
   type VoiceConnection,
 } from '@discordjs/voice';
 import type { VoiceBasedChannel, TextChannel } from 'discord.js';
-import { getStreamUrl } from '../utils/youtube';
+import { getStream } from '../utils/youtube';
 import type { QueueTrack, RepeatMode } from './types';
 
 export class GuildPlayer {
@@ -47,12 +47,10 @@ export class GuildPlayer {
 
     if (existing) {
       if (existing.state.status === VoiceConnectionStatus.Ready) {
-        // Already connected and ready — reuse
         this.connection = existing;
         this.connection.subscribe(this.audioPlayer);
         return;
       }
-      // Stale / broken connection — destroy and reconnect
       existing.destroy();
     }
 
@@ -65,7 +63,6 @@ export class GuildPlayer {
 
     this.connection.subscribe(this.audioPlayer);
 
-    // Handle surprise disconnects
     this.connection.on(VoiceConnectionStatus.Disconnected, async () => {
       try {
         await Promise.race([
@@ -102,11 +99,8 @@ export class GuildPlayer {
     try {
       console.log(`[GuildPlayer:${this.guildId}] Playing: ${track.title} (${track.videoId})`);
 
-      // getStreamUrl returns a deciphered YouTube URL — pass directly to ffmpeg.
-      // ffmpeg handles the HTTP fetch; no need to pipe a Node stream ourselves.
-      const streamUrl = await getStreamUrl(track.videoId);
-
-      const resource = createAudioResource(streamUrl, {
+      const stream = await getStream(track.videoId);
+      const resource = createAudioResource(stream, {
         inputType: StreamType.Arbitrary,
       });
 
