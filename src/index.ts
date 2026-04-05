@@ -1,14 +1,12 @@
 import { Client, Collection, GatewayIntentBits } from 'discord.js';
 import type { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { execSync } from 'child_process';
+import http from 'http';
 import dotenv from 'dotenv';
-
 dotenv.config();
 
-// Ensure ffmpeg is discoverable
 function resolveFfmpeg(): void {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const ffmpegStatic = require('ffmpeg-static') as string | null;
     if (ffmpegStatic) {
       process.env.FFMPEG_PATH = ffmpegStatic;
@@ -16,7 +14,6 @@ function resolveFfmpeg(): void {
       return;
     }
   } catch { /* fall through */ }
-
   try {
     const sys = execSync('which ffmpeg', { encoding: 'utf8' }).trim();
     if (sys) {
@@ -27,8 +24,15 @@ function resolveFfmpeg(): void {
     console.warn('[Aurix] WARNING: ffmpeg not found!');
   }
 }
-
 resolveFfmpeg();
+
+const PORT = process.env.PORT || 3000;
+http.createServer((_, res) => {
+  res.writeHead(200);
+  res.end('OK');
+}).listen(PORT, () => {
+  console.log(`[Aurix] HTTP server listening on port ${PORT}`);
+});
 
 export interface Command {
   data: SlashCommandBuilder;
@@ -51,7 +55,6 @@ async function main() {
   });
 
   const commands = new Collection<string, Command>();
-
   const commandModules = [
     await import('./commands/play'),
     await import('./commands/skip'),
