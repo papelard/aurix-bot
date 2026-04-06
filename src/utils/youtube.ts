@@ -1,6 +1,5 @@
 import { Innertube } from 'youtubei.js';
 import { Readable } from 'stream';
-import playdl from 'play-dl';
 
 export interface YouTubeVideo {
   videoId: string;
@@ -69,23 +68,15 @@ export async function getVideoInfo(videoId: string): Promise<YouTubeVideo | null
 }
 
 export async function getStream(videoId: string): Promise<Readable> {
-  const url = `https://www.youtube.com/watch?v=${videoId}`;
-
-  try {
-    console.log('[YouTube] Trying play-dl...');
-    const source = await playdl.stream(url, { quality: 2 });
-    console.log('[YouTube] play-dl success');
-    return source.stream;
-  } catch (err) {
-    console.error('[YouTube] play-dl failed, trying innertube:', err);
-    const innertube = await getInnertube();
-    const stream = await innertube.download(videoId, {
-      type: 'audio',
-      quality: 'best',
-      format: 'any',
-    });
-    return Readable.from(stream);
-  }
+  console.log(`[YouTube] Getting stream via innertube for: ${videoId}`);
+  const innertube = await getInnertube();
+  const stream = await innertube.download(videoId, {
+    type: 'audio',
+    quality: 'best',
+    format: 'any',
+  });
+  console.log('[YouTube] Innertube stream success');
+  return Readable.from(stream as any);
 }
 
 function formatDuration(sec: number): string {
